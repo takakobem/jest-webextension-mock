@@ -14,14 +14,75 @@ describe('browser.storage', () => {
   ['sync', 'local', 'managed'].forEach((type) => {
     describe(type, () => {
       const storage = browser.storage[type];
-      describe('get', () => {
+      describe('get saved value', () => {
+        expect(jest.isMockFunction(storage.get)).toBe(true);
+        test('a string key', (done) => {
+          const key = 'test';
+          storage.set({ [key]: key }, () => {
+            storage.get(key, (result) => {
+              expect(result).toBeDefined();
+              expect(typeof result === 'object').toBeTruthy();
+              expect(result).toHaveProperty(key, key);
+              done();
+            });
+          });
+        });
+        test('an array key', (done) => {
+          const keys = ['test1', 'test2'];
+          storage.set(
+            keys.reduce((acc, curr) => {
+              acc[curr] = curr;
+              return acc;
+            }, {}),
+            () => {
+              storage.get(keys, (result) => {
+                expect(result).toBeDefined();
+                expect(typeof result === 'object').toBeTruthy();
+                keys.forEach((k) => {
+                  expect(result).toHaveProperty(k, k);
+                });
+                done();
+              });
+            }
+          );
+        });
+        test('an object key', (done) => {
+          const key = { test: [] };
+          storage.set({ test: 'test' }, () => {
+            storage.get(key, (result) => {
+              expect(result).toBeDefined();
+              expect(typeof result === 'object').toBeTruthy();
+              Object.keys(key).forEach((k) => {
+                expect(result).toHaveProperty(k, 'test');
+              });
+              done();
+            });
+          });
+        });
+        test('a invalid key', () => {
+          try {
+            storage.get(1, jest.fn());
+          } catch (e) {
+            expect(e.message).toBe('Wrong key given');
+          }
+        });
+        afterEach(() => {
+          expect(storage.get).toHaveBeenCalledTimes(1);
+          storage.clear();
+          storage.get.mockClear();
+          storage.set.mockClear();
+          storage.remove.mockClear();
+          storage.clear.mockClear();
+        });
+      });
+      describe('get unsaved value', () => {
         expect(jest.isMockFunction(storage.get)).toBe(true);
         test('a string key', (done) => {
           const key = 'test';
           storage.get(key, (result) => {
             expect(result).toBeDefined();
             expect(typeof result === 'object').toBeTruthy();
-            expect(result).toHaveProperty(key, undefined);
+            expect(result).not.toHaveProperty(key);
             done();
           });
         });
@@ -31,7 +92,7 @@ describe('browser.storage', () => {
             expect(result).toBeDefined();
             expect(typeof result === 'object').toBeTruthy();
             keys.forEach((k) => {
-              expect(result).toHaveProperty(k, undefined);
+              expect(result).not.toHaveProperty(k);
             });
             done();
           });
@@ -42,8 +103,7 @@ describe('browser.storage', () => {
             expect(result).toBeDefined();
             expect(typeof result === 'object').toBeTruthy();
             Object.keys(key).forEach((k) => {
-              expect(result).toHaveProperty(k);
-              expect(result[k]).toEqual(key[k]);
+              expect(result).toHaveProperty(k, key[k]);
             });
             done();
           });

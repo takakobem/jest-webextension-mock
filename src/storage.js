@@ -3,16 +3,24 @@ let store = {};
 function resolveKey(key) {
   if (typeof key === 'string') {
     const result = {};
-    result[key] = store[key];
+    if (key in store) {
+      result[key] = store[key];
+    }
     return result;
   } else if (Array.isArray(key)) {
     return key.reduce((acc, curr) => {
-      acc[curr] = store[curr];
+      if (curr in store) {
+        acc[curr] = store[curr];
+      }
       return acc;
     }, {});
   } else if (typeof key === 'object') {
     return Object.keys(key).reduce((acc, curr) => {
-      acc[curr] = store[curr] || key[curr];
+      if (curr in store) {
+        acc[curr] = store[curr];
+      } else {
+        acc[curr] = key[curr];
+      }
       return acc;
     }, {});
   }
